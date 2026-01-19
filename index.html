@@ -5284,25 +5284,19 @@ async function handleLogin(event) {
         const user = await window.SupabaseAPI.loginUtilizador(username, password);
         
         console.log('🔥 DEBUG LOGIN - Dados do utilizador:', user);
-        console.log('🔥 DEBUG LOGIN - Pode editar valor:', user['Pode editar'], 'Tipo:', typeof user['Pode editar']);
-        console.log('🔥 DEBUG LOGIN - Role valor:', user.Role, 'Tipo:', typeof user.Role);
+        console.log('🔥 DEBUG LOGIN - Pode editar valor:', user.pode_editar_planeamento, 'Tipo:', typeof user.pode_editar_planeamento);
+        console.log('🔥 DEBUG LOGIN - Role valor:', user.role, 'Tipo:', typeof user.role);
         
         // Criar sessão local
         const sessionData = {
-            username: user.Username,
-            nomeCompleto: user['Nome Completo'],
-            departamento: user.Departamento,
-            role: user.Role,
-            // 🔧 Aceitar: 'Sim', 'true', true, TRUE
-            podeEditarPlaneamento: user['Pode editar'] === 'Sim' || 
-                                  user['Pode editar'] === 'true' || 
-                                  user['Pode editar'] === true || 
-                                  user['Pode editar'] === 'TRUE',
-            // 🔧 Aceitar: 'Sim', 'true', true, TRUE
-            ativo: user.Ativo === 'Sim' || 
-                   user.Ativo === 'true' || 
-                   user.Ativo === true || 
-                   user.Ativo === 'TRUE',
+            username: user.username,
+            nomeCompleto: user.nome_completo,
+            departamento: user.departamento,
+            role: user.role,
+            // ✅ v3.7.2.13: Usar underscores (Supabase padrão)
+            podeEditarPlaneamento: user.pode_editar_planeamento === true || 
+                                  user.pode_editar_planeamento === 'true',
+            ativo: true, // Sempre ativo se fez login
             token: 'supabase_' + Date.now()
         };
         
@@ -5440,6 +5434,13 @@ function showLoginError(message) {
 function showUserInterface() {
     if (!AppState.currentUser) return;
     
+    // ✅ v3.7.2.13: Validar campos obrigatórios
+    if (!AppState.currentUser.username || !AppState.currentUser.nomeCompleto) {
+        console.error('❌ Dados do utilizador incompletos:', AppState.currentUser);
+        showLoginError('Erro ao carregar dados do utilizador. Tenta fazer login novamente.');
+        return;
+    }
+    
     hideLoginModal();
     
     const userInfo = document.getElementById('userInfo');
@@ -5447,7 +5448,7 @@ function showUserInterface() {
     
     if (userInfo) {
         userInfo.querySelector('.user-name').textContent = AppState.currentUser.nomeCompleto;
-        userInfo.querySelector('.user-dept').textContent = AppState.currentUser.departamento;
+        userInfo.querySelector('.user-dept').textContent = AppState.currentUser.departamento || 'N/A';
         userInfo.style.display = 'flex';
     }
     

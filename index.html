@@ -3693,38 +3693,10 @@
     <header class="app-header">
         <div class="header-content">
             <h1>
-                <img src="/appmanutencao/icons/android-chrome-192x192.png" alt="Logo" class="header-icon" id="headerLogo">
                 🏡 Tarefas de Casa
             </h1>
             <div class="header-actions">
-                <!-- 📚 BOTÃO DE TESTE REMOVIDO - Usava função antiga -->
-                
-                <!-- 🚨 BOTÃO DE ALERTAS (SÓ ÍCONE) -->
-                <button 
-                    id="testarAlertasBtn" 
-                    onclick="mostrarAlertasPendentes()" 
-                    style="
-                        width: 40px;
-                        height: 40px;
-                        background: #ff6b6b;
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        cursor: pointer;
-                        font-size: 20px;
-                        display: none;
-                        align-items: center;
-                        justify-content: center;
-                        margin-right: 12px;
-                        transition: all 0.2s;
-                        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-                    "
-                    onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 4px 12px rgba(255, 107, 107, 0.5)';"
-                    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(255, 107, 107, 0.3)';"
-                    title="Ver alertas de produtividade"
-                >
-                    🚨
-                </button>
+                <!-- ✅ v3.7.2.21: Botões de teste e alertas removidos (app doméstica) -->
                 
                 <div id="userInfo" class="user-info" style="display: none;">
                     <span class="user-name"></span>
@@ -4020,7 +3992,7 @@
                 
                 <!-- Card: Adicionar Item -->
                 <div class="card">
-                    <h2 class="card-title">🛒 Lista de Compras</h2>
+                    <h2 class="card-title">Lista de Compras</h2>
                     <p class="card-description">Adiciona artigos para as próximas compras semanais</p>
                     
                     <form id="comprasForm" style="display: flex; gap: 12px; margin-bottom: 20px;">
@@ -5559,29 +5531,54 @@ function applyUserAutoFill() {
 function applyPermissions() {
     if (!AppState.currentUser) return;
     
-    const role = AppState.currentUser.role;
-    const podeEditarPlaneamento = AppState.currentUser.podeEditarPlaneamento;
-    const username = AppState.currentUser.username.toLowerCase();
+    const user = AppState.currentUser;
     
-    // 🔒 v3.7.4.1: Mostrar aba Manuais apenas para admins e Gonçalo
-    const tabManuaisBtn = document.getElementById('tabManuaisBtn');
-    if (tabManuaisBtn) {
-        // Normalizar nome (remover acentos/cedilhas)
-        const usernameNormalizado = username.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        const isAdmin = role === 'admin' || role === 'Administrador';
-        const isGoncalo = usernameNormalizado === 'goncalo' || username === 'gonçalo';
+    // ✅ v3.7.2.21: Permissões por tab
+    const tabPermissions = {
+        'novo': user.acesso_nova_tarefa !== false, // Default: true
+        'lista': user.acesso_lista_tarefas !== false,
+        'stock': user.acesso_compras !== false,
+        'novoDocumento': user.acesso_novo_documento !== false,
+        'analise': user.acesso_documentos !== false,
+        'farmacia': user.acesso_farmacia === true // Default: false
+    };
+    
+    console.log('🔒 Permissões do utilizador:', tabPermissions);
+    
+    // Aplicar visibilidade das tabs
+    Object.entries(tabPermissions).forEach(([tabId, hasAccess]) => {
+        const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        const tabContent = document.querySelector(`.tab-content[data-tab="${tabId}"]`);
         
-        if (isAdmin || isGoncalo) {
-            tabManuaisBtn.style.display = 'flex';
-            console.log('✅ Aba Manuais habilitada para:', username);
-        } else {
-            tabManuaisBtn.style.display = 'none';
-            console.log('🔒 Aba Manuais oculta para:', username);
+        if (tabBtn) {
+            if (hasAccess) {
+                tabBtn.style.display = 'flex';
+            } else {
+                tabBtn.style.display = 'none';
+                // Se era a tab ativa, mudar para a primeira disponível
+                if (tabBtn.classList.contains('active')) {
+                    const firstVisibleTab = document.querySelector('.tab-btn[style*="display: flex"], .tab-btn:not([style*="display: none"])');
+                    if (firstVisibleTab) {
+                        firstVisibleTab.click();
+                    }
+                }
+            }
         }
-    }
+        
+        if (tabContent && !hasAccess) {
+            tabContent.style.display = 'none';
+        }
+    });
     
-    // Controlo de acesso ao Planeamento
-    if (!podeEditarPlaneamento && role !== 'admin') {
+    // Log de resumo
+    const visibleTabs = Object.entries(tabPermissions)
+        .filter(([_, hasAccess]) => hasAccess)
+        .map(([tabId]) => tabId);
+    
+    console.log(`✅ Tabs visíveis para ${user.username}:`, visibleTabs);
+    
+    // Controlo de acesso ao Planeamento (código antigo mantido para compatibilidade)
+    if (!user.podeEditarPlaneamento && user.role !== 'admin') {
         const planningTab = document.querySelector('.tab-content[data-tab="planeamento"]');
         if (planningTab) {
             const allInputs = planningTab.querySelectorAll('input, select, button, textarea');
@@ -5599,8 +5596,6 @@ function applyPermissions() {
             planningTab.insertBefore(warningDiv, planningTab.firstChild);
         }
     }
-    
-    console.log('🔒 Permissões aplicadas - Role:', role, '| Editar Planeamento:', podeEditarPlaneamento);
 }
 
 // ============================================
@@ -5869,6 +5864,9 @@ async function initializeApp() {
     
     // ✅ v3.7.2.4: Carregar zonas do Supabase
     await carregarZonas();
+    
+    // ✅ v3.7.2.21: Carregar tipos de tarefa do Supabase
+    await carregarTiposTarefa();
     
     // 📚 Carregar manuais em background (para chatbot)
     // carregarManuaisBackground(); // ❌ REMOVIDO v3.7.2.2: Tab Manuais foi removida
@@ -10044,7 +10042,9 @@ async function carregarZonas() {
             zonas.forEach(zona => {
                 const option = document.createElement('option');
                 option.value = zona.id;
-                option.textContent = `${zona.icone} ${zona.nome}`;
+                // ✅ v3.7.2.21: Corrigido - Supabase usa 'icon', não 'icone'
+                const icone = zona.icon || zona.icone || '🏠';
+                option.textContent = `${icone} ${zona.nome}`;
                 option.dataset.zonaNome = zona.nome;
                 zonaSelect.appendChild(option);
             });
@@ -10074,7 +10074,8 @@ async function carregarZonas() {
             zonasCache.forEach(zona => {
                 const option = document.createElement('option');
                 option.value = zona.id;
-                option.textContent = `${zona.icone} ${zona.nome}`;
+                const icone = zona.icon || zona.icone || '🏠';
+                option.textContent = `${icone} ${zona.nome}`;
                 option.dataset.zonaNome = zona.nome;
                 zonaSelect.appendChild(option);
             });
@@ -10088,6 +10089,115 @@ async function carregarZonas() {
 function getZonaNome(zonaId) {
     const zona = zonasCache.find(z => z.id === parseInt(zonaId));
     return zona ? zona.nome : 'Desconhecida';
+}
+
+// ============================================
+// ✅ v3.7.2.21: CARREGAR TIPOS DE TAREFA DO SUPABASE
+// ============================================
+
+let tiposTarefaCache = [];
+
+async function carregarTiposTarefa() {
+    try {
+        console.log('📋 Carregando tipos de tarefa do Supabase...');
+        
+        // Buscar tipos ativos do Supabase
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/tipos_tarefa?ativa=eq.true&order=ordem.asc`, {
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar tipos: ${response.status}`);
+        }
+        
+        const tipos = await response.json();
+        tiposTarefaCache = tipos;
+        
+        console.log(`✅ ${tipos.length} tipos de tarefa carregados:`, tipos.map(t => t.nome));
+        
+        // Popular dropdown de tipo
+        const tipoSelect = document.getElementById('tipo');
+        if (tipoSelect) {
+            // Limpar opções antigas (exceto a primeira)
+            tipoSelect.innerHTML = '<option value="">Selecione o tipo</option>';
+            
+            // Adicionar tipos
+            tipos.forEach(tipo => {
+                const option = document.createElement('option');
+                option.value = tipo.nome;
+                option.textContent = `${tipo.icone} ${tipo.nome}`;
+                option.dataset.cor = tipo.cor;
+                tipoSelect.appendChild(option);
+            });
+            
+            console.log('✅ Dropdown de tipos populado');
+        }
+        
+        // Popular filtros de tipo (na Lista de Tarefas)
+        popularFiltrosTipo(tipos);
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar tipos de tarefa:', error);
+        showToast('⚠️ Erro ao carregar tipos. Usando padrão.', 'warning');
+        
+        // Fallback: tipos offline
+        tiposTarefaCache = [
+            { id: 1, nome: 'Casa', icone: '🏠', cor: '#007AFF' },
+            { id: 2, nome: 'Jardim', icone: '🌳', cor: '#34C759' },
+            { id: 3, nome: 'Carro', icone: '🚗', cor: '#FF3B30' },
+            { id: 4, nome: 'Administrativo', icone: '📄', cor: '#FF9500' },
+            { id: 5, nome: 'Compras', icone: '🛒', cor: '#5856D6' },
+            { id: 6, nome: 'Outros', icone: '📌', cor: '#8E8E93' }
+        ];
+        
+        // Popular com dados offline
+        const tipoSelect = document.getElementById('tipo');
+        if (tipoSelect) {
+            tipoSelect.innerHTML = '<option value="">Selecione o tipo</option>';
+            tiposTarefaCache.forEach(tipo => {
+                const option = document.createElement('option');
+                option.value = tipo.nome;
+                option.textContent = `${tipo.icone} ${tipo.nome}`;
+                option.dataset.cor = tipo.cor;
+                tipoSelect.appendChild(option);
+            });
+        }
+        
+        popularFiltrosTipo(tiposTarefaCache);
+    }
+}
+
+function popularFiltrosTipo(tipos) {
+    // Popular checkboxes de filtro na Lista de Tarefas
+    const filtroContainer = document.querySelector('.filter-group');
+    if (filtroContainer) {
+        // Procurar pelo container de filtros de tipo
+        const tipoLabel = Array.from(filtroContainer.querySelectorAll('.filter-label')).find(
+            label => label.textContent.includes('Tipo de Tarefa')
+        );
+        
+        if (tipoLabel) {
+            const checkboxContainer = tipoLabel.nextElementSibling;
+            if (checkboxContainer) {
+                checkboxContainer.innerHTML = ''; // Limpar
+                
+                tipos.forEach(tipo => {
+                    const label = document.createElement('label');
+                    label.className = 'filter-checkbox';
+                    label.innerHTML = `
+                        <input type="checkbox" class="filter-tipo" value="${tipo.nome}" checked>
+                        <span>${tipo.icone} ${tipo.nome}</span>
+                    `;
+                    checkboxContainer.appendChild(label);
+                });
+                
+                console.log('✅ Filtros de tipo atualizados');
+            }
+        }
+    }
 }
 
 // ============================================

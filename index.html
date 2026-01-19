@@ -10440,83 +10440,234 @@ async function syncMovimentoToGoogleSheets(movimento) {
 
 let listaCompras = [];
 
-// Carregar lista de compras do localStorage
-function carregarListaCompras() {
-    const saved = localStorage.getItem('listaCompras');
-    if (saved) {
-        listaCompras = JSON.parse(saved);
+// ✅ v3.7.2.24: Carregar lista de compras do SUPABASE
+async function carregarListaCompras() {
+    try {
+        // Buscar itens do Supabase (ordenar por data)
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/lista_compras?order=data_adicao.desc`, {
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar compras: ${response.status}`);
+        }
+        
+        const items = await response.json();
+        
+        // Converter formato Supabase para formato interno
+        listaCompras = items.map(item => ({
+            id: item.id,
+            nome: item.nome,
+            comprado: item.comprado,
+            dataAdicao: item.data_adicao,
+            adicionadoPor: item.adicionado_por,
+            compradoPor: item.comprado_por
+        }));
+        
+        console.log(`✅ ${listaCompras.length} itens de compras carregados`);
+        renderizarListaCompras();
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar lista de compras:', error);
+        showToast('⚠️ Erro ao carregar compras. Usando modo offline.', 'warning');
+        
+        // Fallback: tentar localStorage
+        const saved = localStorage.getItem('listaCompras');
+        if (saved) {
+            listaCompras = JSON.parse(saved);
+            renderizarListaCompras();
+        }
     }
-    renderizarListaCompras();
 }
 
-// Salvar lista no localStorage
+// ✅ v3.7.2.24: NÃO precisa mais - sincroniza com Supabase
 function salvarListaCompras() {
+    // Manter localStorage como backup
     localStorage.setItem('listaCompras', JSON.stringify(listaCompras));
 }
 
-// Adicionar item
-function adicionarItemCompras(nome) {
+// ✅ v3.7.2.24: Adicionar item no SUPABASE
+async function adicionarItemCompras(nome) {
     if (!nome || nome.trim() === '') return;
     
+    const username = AppState.currentUser?.username || 'Desconhecido';
+    
     const novoItem = {
-        id: Date.now(),
         nome: nome.trim(),
         comprado: false,
-        dataAdicao: new Date().toISOString()
+        adicionado_por: username,
+        data_adicao: new Date().toISOString()
     };
     
-    listaCompras.push(novoItem);
-    salvarListaCompras();
-    renderizarListaCompras();
-    showToast('✅ Item adicionado à lista', 'success');
-}
-
-// Marcar como comprado/não comprado
-function toggleItemComprado(id) {
-    const item = listaCompras.find(i => i.id === id);
-    if (item) {
-        item.comprado = !item.comprado;
-        salvarListaCompras();
-        renderizarListaCompras();
+    try {
+        // Inserir no Supabase
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/lista_compras`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(novoItem)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao adicionar item: ${response.status}`);
+        }
+        
+        const itemCriado = await response.json();
+        console.log('✅ Item adicionado ao Supabase:', itemCriado);
+        
+        // Recarregar lista
+        await carregarListaCompras();
+        showToast('✅ Item adicionado à lista', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao adicionar item:', error);
+        showToast('❌ Erro ao adicionar item. Tenta novamente.', 'error');
     }
 }
 
-// Remover item específico
-function removerItemCompras(id) {
-    listaCompras = listaCompras.filter(i => i.id !== id);
-    salvarListaCompras();
-    renderizarListaCompras();
-    showToast('🗑️ Item removido', 'info');
+// ✅ v3.7.2.24: Marcar como comprado no SUPABASE
+async function toggleItemComprado(id) {
+    const item = listaCompras.find(i => i.id === id);
+    if (!item) return;
+    
+    const username = AppState.currentUser?.username || 'Desconhecido';
+    const novoEstado = !item.comprado;
+    
+    const update = {
+        comprado: novoEstado,
+        comprado_por: novoEstado ? username : null,
+        data_comprado: novoEstado ? new Date().toISOString() : null
+    };
+    
+    try {
+        // Atualizar no Supabase
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/lista_compras?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(update)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao atualizar item: ${response.status}`);
+        }
+        
+        console.log('✅ Item atualizado no Supabase');
+        
+        // Recarregar lista
+        await carregarListaCompras();
+        
+    } catch (error) {
+        console.error('❌ Erro ao atualizar item:', error);
+        showToast('❌ Erro ao atualizar. Tenta novamente.', 'error');
+    }
 }
 
-// Limpar itens comprados
-function limparComprasCompletas() {
-    const naoComprados = listaCompras.filter(i => !i.comprado);
-    const totalRemovidos = listaCompras.length - naoComprados.length;
+// ✅ v3.7.2.24: Remover item do SUPABASE
+async function removerItemCompras(id) {
+    try {
+        // Deletar do Supabase
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/lista_compras?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao remover item: ${response.status}`);
+        }
+        
+        console.log('✅ Item removido do Supabase');
+        
+        // Recarregar lista
+        await carregarListaCompras();
+        showToast('🗑️ Item removido', 'info');
+        
+    } catch (error) {
+        console.error('❌ Erro ao remover item:', error);
+        showToast('❌ Erro ao remover. Tenta novamente.', 'error');
+    }
+}
+
+// ✅ v3.7.2.24: Limpar itens comprados do SUPABASE
+async function limparComprasCompletas() {
+    const comprados = listaCompras.filter(i => i.comprado);
     
-    if (totalRemovidos === 0) {
+    if (comprados.length === 0) {
         showToast('ℹ️ Nenhum item comprado para limpar', 'info');
         return;
     }
     
-    if (confirm(`Remover ${totalRemovidos} item(ns) já comprado(s)?`)) {
-        listaCompras = naoComprados;
-        salvarListaCompras();
-        renderizarListaCompras();
-        showToast(`✅ ${totalRemovidos} item(ns) removido(s)`, 'success');
+    if (!confirm(`Remover ${comprados.length} item(ns) já comprado(s)?`)) {
+        return;
+    }
+    
+    try {
+        // Deletar todos os itens comprados do Supabase
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/lista_compras?comprado=eq.true`, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao limpar comprados: ${response.status}`);
+        }
+        
+        console.log('✅ Itens comprados removidos do Supabase');
+        
+        // Recarregar lista
+        await carregarListaCompras();
+        showToast(`✅ ${comprados.length} item(ns) removido(s)`, 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao limpar comprados:', error);
+        showToast('❌ Erro ao limpar. Tenta novamente.', 'error');
     }
 }
 
-// Reset completo da lista
-function resetarTodasCompras() {
+// ✅ v3.7.2.24: Reset completo no SUPABASE
+async function resetarTodasCompras() {
     if (listaCompras.length === 0) {
         showToast('ℹ️ A lista já está vazia', 'info');
         return;
     }
     
-    if (confirm(`Apagar TODOS os ${listaCompras.length} itens da lista?`)) {
+    if (!confirm(`Apagar TODOS os ${listaCompras.length} itens da lista?`)) {
+        return;
+    }
+    
+    try {
+        // Deletar TUDO do Supabase
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/lista_compras`, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao resetar lista: ${response.status}`);
+        }
+        
+        console.log('✅ Lista de compras resetada no Supabase');
         listaCompras = [];
-        salvarListaCompras();
         renderizarListaCompras();
         showToast('🗑️ Lista de compras limpa', 'success');
     }

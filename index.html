@@ -8686,102 +8686,103 @@ async function syncWithSupabase() {
         // Carregar PEDIDOS
         await loadDataFromSupabase();
         
-        // Carregar ARTIGOS
-        const artigos = await window.SupabaseAPI.getArtigos();
-        AppState.artigos = artigos.map(a => ({
-            id: a.ID,
-            codigo: a.ID,
-            familia: a.Família,
-            designacao: a.Designação,
-            referencia: a.Referência,
-            fornecedor: a.Fornecedor,
-            preco: parseFloat(a['Preço Unitário']) || 0,
-            stockMinimo: parseInt(a['Stock Mínimo']) || 0,
-            // ✅ NOTA: Stock NÃO é guardado na tabela! É calculado via calcularStockAtual()
-            empresa: a.Empresa,
-            unidade: a.Unidade
-        }));
-        console.log(`✅ ${AppState.artigos.length} artigos carregados`);
-        renderStockMinimo();
+        // ✅ v3.7.2.20: Artigos e movimentos desativados (app doméstica não usa stock)
+        // Carregar ARTIGOS - DESATIVADO
+        // const artigos = await window.SupabaseAPI.getArtigos();
+        // AppState.artigos = artigos.map(a => ({
+        //     id: a.ID,
+        //     codigo: a.ID,
+        //     familia: a.Família,
+        //     designacao: a.Designação,
+        //     referencia: a.Referência,
+        //     fornecedor: a.Fornecedor,
+        //     preco: parseFloat(a['Preço Unitário']) || 0,
+        //     stockMinimo: parseInt(a['Stock Mínimo']) || 0,
+        //     // ✅ NOTA: Stock NÃO é guardado na tabela! É calculado via calcularStockAtual()
+        //     empresa: a.Empresa,
+        //     unidade: a.Unidade
+        // }));
+        // console.log(`✅ ${AppState.artigos.length} artigos carregados`);
+        // renderStockMinimo();
         
-        // Carregar MOVIMENTOS
-        const movimentos = await window.SupabaseAPI.getMovimentos();
-        AppState.movimentos = movimentos.map(m => ({
-            id: m.ID,
-            dataHora: m['Data/Hora'],
-            artigoId: m['Artigo ID'],
-            tipo: m.Tipo,
-            quantidade: parseInt(m.Quantidade) || 0,
-            pedidoId: m['Pedido ID'],
-            responsavel: m.Responsável,
-            observacoes: m.Observações,
-            empresa: m.Empresa
-        }));
+        // Carregar MOVIMENTOS - DESATIVADO
+        // const movimentos = await window.SupabaseAPI.getMovimentos();
+        // AppState.movimentos = movimentos.map(m => ({
+        //     id: m.ID,
+        //     dataHora: m['Data/Hora'],
+        //     artigoId: m['Artigo ID'],
+        //     tipo: m.Tipo,
+        //     quantidade: parseInt(m.Quantidade) || 0,
+        //     pedidoId: m['Pedido ID'],
+        //     responsavel: m.Responsável,
+        //     observacoes: m.Observações,
+        //     empresa: m.Empresa
+        // }));
         
         // ✅ Ordenar movimentos por data (mais recentes primeiro)
-        AppState.movimentos.sort((a, b) => {
-            const dateA = new Date(a.dataHora);
-            const dateB = new Date(b.dataHora);
-            return dateB - dateA;
-        });
+        // AppState.movimentos.sort((a, b) => {
+        //     const dateA = new Date(a.dataHora);
+        //     const dateB = new Date(b.dataHora);
+        //     return dateB - dateA;
+        // });
         
-        console.log(`✅ ${AppState.movimentos.length} movimentos carregados`);
+        // console.log(`✅ ${AppState.movimentos.length} movimentos carregados`);
         
-        // Carregar UTILIZADORES
-        const utilizadores = await window.SupabaseAPI.getUtilizadores();
-        AppState.utilizadores = utilizadores
-            .filter(u => u.Ativo === 'Sim' || u.Ativo === true)
-            .map(u => ({
-                username: u.Username,
-                nomeCompleto: u['Nome Completo'],
-                departamento: u.Departamento,
-                role: u.Role
-            }));
+        // Carregar UTILIZADORES - DESATIVADO
+        // const utilizadores = await window.SupabaseAPI.getUtilizadores();
+        // AppState.utilizadores = utilizadores
+        //     .filter(u => u.Ativo === 'Sim' || u.Ativo === true)
+        //     .map(u => ({
+        //         username: u.Username,
+        //         nomeCompleto: u['Nome Completo'],
+        //         departamento: u.Departamento,
+        //         role: u.Role
+        //     }));
         
-        // ✅ FALLBACK: Se não houver utilizadores, usar lista padrão
-        if (AppState.utilizadores.length === 0) {
-            console.warn('⚠️ Nenhum utilizador no Supabase. Usando lista padrão.');
-            AppState.utilizadores = [
-                { username: 'toni', nomeCompleto: 'Toni', departamento: 'Manutenção', role: 'operador' },
-                { username: 'jose', nomeCompleto: 'José', departamento: 'Manutenção', role: 'operador' },
-                { username: 'manuel', nomeCompleto: 'Manuel', departamento: 'Manutenção', role: 'operador' },
-                { username: 'carlos', nomeCompleto: 'Carlos', departamento: 'Manutenção', role: 'operador' },
-                { username: 'paulo', nomeCompleto: 'Paulo', departamento: 'Manutenção', role: 'operador' },
-                { username: 'pedro', nomeCompleto: 'Pedro', departamento: 'Manutenção', role: 'operador' },
-                { username: 'bruno', nomeCompleto: 'Bruno', departamento: 'Manutenção', role: 'operador' },
-                { username: 'miguel', nomeCompleto: 'Miguel', departamento: 'Manutenção', role: 'operador' }
-            ];
-        }
+        // ✅ FALLBACK: Se não houver utilizadores, usar lista padrão - DESATIVADO
+        // if (AppState.utilizadores.length === 0) {
+        //     console.warn('⚠️ Nenhum utilizador no Supabase. Usando lista padrão.');
+        //     AppState.utilizadores = [
+        //         { username: 'toni', nomeCompleto: 'Toni', departamento: 'Manutenção', role: 'operador' },
+        //         { username: 'jose', nomeCompleto: 'José', departamento: 'Manutenção', role: 'operador' },
+        //         { username: 'manuel', nomeCompleto: 'Manuel', departamento: 'Manutenção', role: 'operador' },
+        //         { username: 'carlos', nomeCompleto: 'Carlos', departamento: 'Manutenção', role: 'operador' },
+        //         { username: 'paulo', nomeCompleto: 'Paulo', departamento: 'Manutenção', role: 'operador' },
+        //         { username: 'pedro', nomeCompleto: 'Pedro', departamento: 'Manutenção', role: 'operador' },
+        //         { username: 'bruno', nomeCompleto: 'Bruno', departamento: 'Manutenção', role: 'operador' },
+        //         { username: 'miguel', nomeCompleto: 'Miguel', departamento: 'Manutenção', role: 'operador' }
+        //     ];
+        // }
         
-        console.log(`✅ ${AppState.utilizadores.length} utilizadores carregados`);
+        // console.log(`✅ ${AppState.utilizadores.length} utilizadores carregados`);
         
-        // ✅ v3.7.0.9: Carregar EQUIPAMENTOS do Supabase
-        console.log('🔄 A carregar equipamentos do Supabase...');
-        const equipamentos = await window.SupabaseAPI.getEquipamentos();
-        console.log('🔍 Equipamentos recebidos:', equipamentos);
-        AppState.equipamentos = equipamentos || [];
-        console.log(`✅ ${AppState.equipamentos.length} equipamentos carregados do Supabase`);
+        // ✅ v3.7.2.20: Carregar EQUIPAMENTOS - DESATIVADO (app doméstica não usa)
+        // console.log('🔄 A carregar equipamentos do Supabase...');
+        // const equipamentos = await window.SupabaseAPI.getEquipamentos();
+        // console.log('🔍 Equipamentos recebidos:', equipamentos);
+        // AppState.equipamentos = equipamentos || [];
+        // console.log(`✅ ${AppState.equipamentos.length} equipamentos carregados do Supabase`);
         
-        if (AppState.equipamentos.length === 0) {
-            console.error('⚠️ AVISO: Nenhum equipamento carregado! Verificar:');
-            console.error('  1. Tabela lista_equipamentos existe no Supabase?');
-            console.error('  2. Dados foram inseridos?');
-            console.error('  3. RLS permite SELECT público?');
-        }
+        // if (AppState.equipamentos.length === 0) {
+        //     console.error('⚠️ AVISO: Nenhum equipamento carregado! Verificar:');
+        //     console.error('  1. Tabela lista_equipamentos existe no Supabase?');
+        //     console.error('  2. Dados foram inseridos?');
+        //     console.error('  3. RLS permite SELECT público?');
+        // }
         
-        // 🔍 Atualizar painel de debug visual
-        atualizarPainelDebug();
+        // 🔍 Atualizar painel de debug visual - DESATIVADO
+        // atualizarPainelDebug();
         
-        // ✅ v3.7.0.9: Popular dropdowns DEPOIS de carregar equipamentos
+        // ✅ v3.7.0.9: Popular dropdowns DEPOIS de carregar equipamentos - DESATIVADO
         // ✅ NÃO popular área/equipamento automaticamente - aguardar empresa ser selecionada
-        const areaSelect = document.getElementById('areaEquipamento');
-        if (areaSelect) {
-            areaSelect.innerHTML = '<option value="">Escolha primeiro a empresa</option>';
-            areaSelect.disabled = true;
-        }
+        // const areaSelect = document.getElementById('areaEquipamento');
+        // if (areaSelect) {
+        //     areaSelect.innerHTML = '<option value="">Escolha primeiro a empresa</option>';
+        //     areaSelect.disabled = true;
+        // }
         
-        populateEquipamentoFilter();
-        console.log('✅ Dropdowns de equipamentos configurados (aguardando seleção de empresa)');
+        // populateEquipamentoFilter();
+        // console.log('✅ Dropdowns de equipamentos configurados (aguardando seleção de empresa)');
         
         // Guardar localmente
         saveToLocalStorage();
@@ -10783,7 +10784,7 @@ function abrirDocumento(id) {
     document.getElementById('detailsModal').classList.add('active');
 }
 
-// ✅ v3.7.2.19: Abrir/Baixar PDF em nova janela
+// ✅ v3.7.2.21: Abrir/Baixar PDF usando Blob URL
 function abrirPDF(documentoId) {
     const doc = listaDocumentos.find(d => d.id === documentoId);
     if (!doc || !doc.foto || !doc.foto.startsWith('data:application/pdf')) {
@@ -10794,34 +10795,46 @@ function abrirPDF(documentoId) {
     // Criar nome de ficheiro baseado no título do documento
     const nomeArquivo = `${doc.titulo.replace(/[^a-z0-9]/gi, '_')}.pdf`;
     
-    // Tentar abrir em nova janela
     try {
-        // Método 1: Abrir em nova janela (funciona na maioria dos navegadores)
-        const janela = window.open();
+        // ✅ CORREÇÃO: Converter Base64 para Blob URL
+        // Extrair o Base64 puro (remover "data:application/pdf;base64,")
+        const base64Data = doc.foto.split(',')[1];
+        
+        // Converter Base64 para array de bytes
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        
+        // Criar Blob
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        // Criar Blob URL
+        const blobUrl = URL.createObjectURL(blob);
+        
+        console.log('✅ PDF convertido para Blob URL:', blobUrl);
+        
+        // Abrir em nova janela
+        const janela = window.open(blobUrl, '_blank');
+        
         if (janela) {
-            janela.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>${doc.titulo}</title>
-                    <style>
-                        body { margin: 0; padding: 0; overflow: hidden; }
-                        iframe { width: 100vw; height: 100vh; border: none; }
-                    </style>
-                </head>
-                <body>
-                    <iframe src="${doc.foto}#toolbar=1" type="application/pdf"></iframe>
-                </body>
-                </html>
-            `);
-            janela.document.close();
             showToast('✅ PDF aberto em nova janela', 'success');
+            
+            // Limpar Blob URL após 1 minuto (economia de memória)
+            setTimeout(() => {
+                URL.revokeObjectURL(blobUrl);
+                console.log('🧹 Blob URL limpo');
+            }, 60000);
         } else {
             // Fallback: Fazer download se popup foi bloqueado
+            URL.revokeObjectURL(blobUrl);
             baixarPDF(doc, nomeArquivo);
         }
     } catch (error) {
-        console.error('Erro ao abrir PDF:', error);
+        console.error('❌ Erro ao abrir PDF:', error);
+        showToast('❌ Erro ao abrir PDF. A fazer download...', 'error');
         // Fallback: Fazer download
         baixarPDF(doc, nomeArquivo);
     }

@@ -4565,11 +4565,11 @@ async function getArtigos() {
 
 // Utilizadores
 async function getUtilizadores() {
-    return await supabaseFetch('utilizadores?select=*&order=Username.asc');
+    return await supabaseFetch('users?select=*&order=username.asc');
 }
 
 async function loginUtilizador(username, password) {
-    const users = await supabaseFetch(`utilizadores?Username=eq.${encodeURIComponent(username)}&Password=eq.${encodeURIComponent(password)}`);
+    const users = await supabaseFetch(`users?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}`);
     
     if (users.length === 0) {
         throw new Error('Utilizador ou password incorretos');

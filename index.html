@@ -3769,6 +3769,9 @@
             <button class="tab-btn" data-tab="analise">
                 📄 Documentos
             </button>
+            <button class="tab-btn" data-tab="farmacia">
+                💊 Farmácia
+            </button>
 
         </nav>
 
@@ -4124,16 +4127,16 @@
                         
                         <!-- Fotografia/Scan -->
                         <div class="form-group">
-                            <label class="form-label" for="fotoDocumento">📸 Fotografia/Scan (opcional, máx. 5MB)</label>
+                            <label class="form-label" for="fotoDocumento">📎 Anexar Ficheiro (opcional, máx. 5MB)</label>
                             <div class="file-upload">
-                                <input type="file" id="fotoDocumento" accept="image/*" class="file-input" onchange="handleDocumentoImage(event)">
+                                <input type="file" id="fotoDocumento" accept="image/*,application/pdf" class="file-input" onchange="handleDocumentoImage(event)">
                                 <label for="fotoDocumento" class="file-label">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                         <circle cx="8.5" cy="8.5" r="1.5"/>
                                         <path d="M21 15l-5-5L5 21"/>
                                     </svg>
-                                    <span id="fileNameDocumento">Escolher imagem</span>
+                                    <span id="fileNameDocumento">Escolher imagem ou PDF</span>
                                 </label>
                                 <div id="imagePreviewDocumento" class="image-preview"></div>
                             </div>
@@ -4244,6 +4247,36 @@
                     <p>Cria o primeiro documento na tab "Novo Documento"</p>
                 </div>
                 
+            </div>
+        </section>
+
+        <!-- ✅ FARMÁCIA TAB - v3.7.2.17 ✅ -->
+        <section class="tab-content" id="tab-farmacia">
+            <div class="container">
+                <div class="card">
+                    <h2 class="card-title" style="text-align: center; color: #007AFF; margin-bottom: 16px;">
+                        💊 Farmácia
+                    </h2>
+                    <div style="
+                        text-align: center;
+                        padding: 60px 20px;
+                        color: #8E8E93;
+                    ">
+                        <div style="font-size: 64px; margin-bottom: 16px;">💊</div>
+                        <h3 style="
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: #1D1D1F;
+                            margin-bottom: 8px;
+                        ">Tab Farmácia</h3>
+                        <p style="
+                            font-size: 15px;
+                            color: #86868B;
+                            max-width: 400px;
+                            margin: 0 auto;
+                        ">Esta tab está pronta para adicionar funcionalidades de gestão de medicamentos, prescrições e alertas de toma.</p>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -8578,28 +8611,16 @@ async function sendToGoogleSheets(data) {
     try {
         console.log('🔥 DEBUG: ID gerado no JavaScript:', data.id);
         
-        // Converter formato da app → formato Supabase
+        // ✅ v3.7.2.14: Converter formato da app → formato Supabase DOMÉSTICO
         const supabaseData = {
-            ID: data.id,
-            'Data/hora': data.dataHora,
-            Tipo: data.tipo,
-            frequencia: data.frequencia || null,  // ✅ v3.7.0.8: null se vazio
-            data_primeira_intervencao: data.dataPrimeiraIntervencao || null,  // ✅ v3.7.0.8: null se vazio
-            Prioridade: data.prioridade,
-            Departamento: data.departamento,
-            Descrição: data.descricao,
-            'Registado por': data.nome,
-            Estado: data.estado,
-            Foto: data.foto || '',
-            Artigos: '[]',
-            Empresa: data.empresa,
-            'Tipo Intervenção': data.tipoIntervencao || '',
-            'Área/Equipamento': data.areaEquipamento || '',
-            Componente: data.componente || '',
-            Urgente: data.urgente ? 'TRUE' : 'FALSE',
-            'Paragem Produção': data.paragemProducao ? 'TRUE' : 'FALSE',
-            'Responsável': data.responsavel || '',  // ✅ ADICIONADO
-            'Horas Estimadas': data.horasEstimadas || 0  // ✅ ADICIONADO
+            pedido_id: data.id,              // OT_00001, OT_00002, etc.
+            tipo: data.tipo,                 // Casa, Jardim, Carro, etc.
+            zona: data.zona || null,         // Cozinha, Sala, Quarto, etc.
+            descricao: data.descricao,       // Texto da tarefa
+            prioridade: data.prioridade,     // Alta, Média, Baixa
+            estado: data.estado || 'Novo',   // Novo, Em curso, Resolvido
+            responsavel: data.responsavel || data.nome || 'Não atribuído',
+            foto_url: data.foto || null      // URL da foto (opcional)
         };
         
         console.log('🔥 DEBUG: Dados enviados para Supabase:', JSON.stringify(supabaseData, null, 2));
@@ -8619,32 +8640,21 @@ async function updateInGoogleSheets(data) {
     try {
         console.log('📤 Preparando atualização no Supabase para pedido:', data.id);
         
-        // Converter formato da app → formato Supabase
+        // ✅ v3.7.2.14: Converter formato da app → formato Supabase DOMÉSTICO
         const supabaseData = {
-            'Data/hora': data.dataHora,
-            Tipo: data.tipo,
-            frequencia: data.frequencia || null,  // ✅ v3.7.0.8: null se vazio
-            data_primeira_intervencao: data.dataPrimeiraIntervencao || null,  // ✅ v3.7.0.8: null se vazio
-            Prioridade: data.prioridade,
-            Departamento: data.departamento,
-            Descrição: data.descricao,
-            'Registado por': data.nome,
-            Estado: data.estado,
-            Foto: data.foto || '',
-            Empresa: data.empresa,
-            'Tipo Intervenção': data.tipoIntervencao || '',
-            'Área/Equipamento': data.areaEquipamento || '',
-            Componente: data.componente || '',
-            Urgente: data.urgente ? 'TRUE' : 'FALSE',
-            'Paragem Produção': data.paragemProducao ? 'TRUE' : 'FALSE',
-            'Responsável': data.responsavel || '',  // ✅ ADICIONADO
-            'Horas Estimadas': data.horasEstimadas || 0  // ✅ ADICIONADO
+            tipo: data.tipo,
+            zona: data.zona || null,
+            descricao: data.descricao,
+            prioridade: data.prioridade,
+            estado: data.estado,
+            responsavel: data.responsavel || data.nome || 'Não atribuído',
+            foto_url: data.foto || null
         };
         
         console.log('📊 Dados a enviar para Supabase:', {
-            ID: data.id,
-            Prioridade: supabaseData.Prioridade,
-            Estado: supabaseData.Estado
+            pedido_id: data.id,
+            prioridade: supabaseData.prioridade,
+            estado: supabaseData.estado
         });
         
         await window.SupabaseAPI.updatePedido(data.id, supabaseData);
@@ -10635,53 +10645,178 @@ function limparFormDocumento() {
 // Handler para foto do documento
 let currentDocumentoPhoto = null;
 
+// ✅ v3.7.2.15: Função de compressão de imagem simples
+function compressDocumentoImage(file, maxWidth = 800, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            const img = new Image();
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Redimensionar se necessário
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Converter para base64
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(dataUrl);
+            };
+            
+            img.onerror = () => {
+                reject(new Error('Erro ao carregar imagem'));
+            };
+            
+            img.src = e.target.result;
+        };
+        
+        reader.onerror = () => {
+            reject(new Error('Erro ao ler ficheiro'));
+        };
+        
+        reader.readAsDataURL(file);
+    });
+}
+
 function handleDocumentoImage(event) {
     const file = event.target.files[0];
     if (!file) return;
     
+    // ✅ v3.7.2.16: Aceitar imagens E PDFs
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+    
+    if (!isImage && !isPDF) {
+        showToast('❌ Por favor selecione uma imagem ou PDF.', 'error');
+        event.target.value = '';
+        return;
+    }
+    
     // Validar tamanho (máx 5MB)
     if (file.size > 5 * 1024 * 1024) {
-        showToast('❌ Imagem muito grande! Máximo 5MB.', 'error');
+        showToast('❌ Ficheiro muito grande! Máximo 5MB.', 'error');
         event.target.value = '';
         return;
     }
     
     // Atualizar nome do ficheiro
-    document.getElementById('fileNameDocumento').textContent = file.name;
+    const fileNameEl = document.getElementById('fileNameDocumento');
+    if (fileNameEl) {
+        fileNameEl.textContent = file.name;
+    }
     
-    // Comprimir e preview
-    compressImage(file).then(dataUrl => {
-        currentDocumentoPhoto = dataUrl;
-        showDocumentoPreview(dataUrl);
-    }).catch(error => {
-        console.error('Erro ao processar imagem:', error);
-        showToast('Erro ao processar imagem.', 'error');
-        event.target.value = '';
-        currentDocumentoPhoto = null;
-    });
+    // ✅ Se for PDF, guardar direto (sem compressão)
+    if (isPDF) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentDocumentoPhoto = e.target.result;
+            showDocumentoPreview(e.target.result, true); // true = é PDF
+            showToast('✅ PDF carregado!', 'success');
+        };
+        reader.onerror = () => {
+            showToast('❌ Erro ao carregar PDF.', 'error');
+            event.target.value = '';
+            currentDocumentoPhoto = null;
+            if (fileNameEl) {
+                fileNameEl.textContent = 'Escolher ficheiro';
+            }
+        };
+        reader.readAsDataURL(file);
+    } 
+    // ✅ Se for imagem, comprimir
+    else if (isImage) {
+        compressDocumentoImage(file, 800, 0.8).then(dataUrl => {
+            currentDocumentoPhoto = dataUrl;
+            showDocumentoPreview(dataUrl, false); // false = é imagem
+            showToast('✅ Imagem carregada e comprimida!', 'success');
+        }).catch(error => {
+            console.error('Erro ao processar imagem:', error);
+            showToast('❌ Erro ao processar imagem.', 'error');
+            event.target.value = '';
+            currentDocumentoPhoto = null;
+            if (fileNameEl) {
+                fileNameEl.textContent = 'Escolher ficheiro';
+            }
+        });
+    }
 }
 
-function showDocumentoPreview(dataUrl) {
+function showDocumentoPreview(dataUrl, isPDF = false) {
     const preview = document.getElementById('imagePreviewDocumento');
-    preview.innerHTML = `
-        <img src="${dataUrl}" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">
-        <button type="button" class="remove-image" onclick="clearDocumentoPreview()" style="
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: rgba(255, 59, 48, 0.9);
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            color: white;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        ">×</button>
-    `;
+    
+    // ✅ v3.7.2.16: Preview diferente para PDF vs Imagem
+    if (isPDF) {
+        // Mostrar ícone de PDF
+        preview.innerHTML = `
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: rgba(0, 122, 255, 0.1);
+                border: 2px dashed rgba(0, 122, 255, 0.3);
+                border-radius: 8px;
+                margin-top: 8px;
+                position: relative;
+            ">
+                <div style="font-size: 48px;">📄</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: #007AFF;">PDF anexado</div>
+                    <div style="font-size: 12px; color: #8E8E93; margin-top: 4px;">Ficheiro PDF pronto para guardar</div>
+                </div>
+                <button type="button" class="remove-image" onclick="clearDocumentoPreview()" style="
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    background: rgba(255, 59, 48, 0.9);
+                    border: none;
+                    border-radius: 50%;
+                    width: 28px;
+                    height: 28px;
+                    cursor: pointer;
+                    color: white;
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">×</button>
+            </div>
+        `;
+    } else {
+        // Mostrar preview de imagem
+        preview.innerHTML = `
+            <img src="${dataUrl}" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px;">
+            <button type="button" class="remove-image" onclick="clearDocumentoPreview()" style="
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                background: rgba(255, 59, 48, 0.9);
+                border: none;
+                border-radius: 50%;
+                width: 28px;
+                height: 28px;
+                cursor: pointer;
+                color: white;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">×</button>
+        `;
+    }
+    
     preview.style.position = 'relative';
 }
 

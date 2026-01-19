@@ -5301,12 +5301,27 @@ async function handleLogin(event) {
             // ✅ v3.7.2.13: Usar underscores (Supabase padrão)
             podeEditarPlaneamento: user.pode_editar_planeamento === true || 
                                   user.pode_editar_planeamento === 'true',
+            // ✅ v3.7.2.22: Permissões por tab
+            acesso_nova_tarefa: user.acesso_nova_tarefa !== false,
+            acesso_lista_tarefas: user.acesso_lista_tarefas !== false,
+            acesso_compras: user.acesso_compras !== false,
+            acesso_novo_documento: user.acesso_novo_documento !== false,
+            acesso_documentos: user.acesso_documentos !== false,
+            acesso_farmacia: user.acesso_farmacia === true,
             ativo: true, // Sempre ativo se fez login
             token: 'supabase_' + Date.now()
         };
         
         console.log('🔥 DEBUG LOGIN - Sessão criada:', sessionData);
         console.log('🔥 DEBUG LOGIN - podeEditarPlaneamento final:', sessionData.podeEditarPlaneamento);
+        console.log('🔒 DEBUG LOGIN - Permissões de tabs:', {
+            nova_tarefa: sessionData.acesso_nova_tarefa,
+            lista_tarefas: sessionData.acesso_lista_tarefas,
+            compras: sessionData.acesso_compras,
+            novo_documento: sessionData.acesso_novo_documento,
+            documentos: sessionData.acesso_documentos,
+            farmacia: sessionData.acesso_farmacia
+        });
         
         AppState.currentUser = sessionData;
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_SESSION, JSON.stringify(sessionData));
@@ -13685,3 +13700,4 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
+

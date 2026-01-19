@@ -1,0 +1,80 @@
+{
+  "name": "Gestão de Manutenção MCF + PSY",
+  "short_name": "Manutenção MCF+PSY",
+  "description": "Sistema completo de gestão de manutenção industrial com controlo de stock para MCF e PSY",
+  "start_url": "./",
+  "display": "standalone",
+  "scope": "./",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "pt-PT",
+  "dir": "ltr",
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Novo Pedido",
+      "short_name": "Novo",
+      "description": "Criar novo pedido de manutenção",
+      "url": "/?action=novo",
+      "icons": [
+        {
+          "src": "./icons/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Lista de Pedidos",
+      "short_name": "Lista",
+      "description": "Ver todos os pedidos",
+      "url": "/?action=lista",
+      "icons": [
+        {
+          "src": "./icons/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Stock",
+      "short_name": "Stock",
+      "description": "Gestão de stock",
+      "url": "/?tab=stock",
+      "icons": [
+        {
+          "src": "./icons/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
+}

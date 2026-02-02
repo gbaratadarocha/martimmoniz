@@ -4230,30 +4230,94 @@
         </section>
 
         <!-- ✅ FARMÁCIA TAB - v3.7.2.17 ✅ -->
+        <!-- ✅ v3.7.2.29: TAB FARMÁCIA (Stock de Medicamentos) -->
         <section class="tab-content" id="tab-farmacia">
             <div class="container">
                 <div class="card">
-                    <h2 class="card-title" style="text-align: center; color: #007AFF; margin-bottom: 16px;">
-                        💊 Farmácia
-                    </h2>
-                    <div style="
+                    <h2 class="card-title">💊 Stock de Medicamentos</h2>
+                    
+                    <!-- Formulário para adicionar medicamento -->
+                    <form id="farmaciaForm" style="margin-bottom: 24px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end;">
+                            <div>
+                                <label for="medicamentoDescricao" style="display: block; margin-bottom: 8px; font-weight: 500; color: #1d1d1f;">
+                                    Medicamento *
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="medicamentoDescricao" 
+                                    placeholder="Ex: Brufen 600, Paracetamol..."
+                                    required
+                                    style="
+                                        width: 100%;
+                                        padding: 12px 16px;
+                                        border: 1px solid #d2d2d7;
+                                        border-radius: 8px;
+                                        font-size: 15px;
+                                        transition: all 0.2s;
+                                    "
+                                >
+                            </div>
+                            
+                            <div>
+                                <label for="medicamentoQuantidade" style="display: block; margin-bottom: 8px; font-weight: 500; color: #1d1d1f;">
+                                    Quantidade *
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="medicamentoQuantidade" 
+                                    placeholder="Ex: 1 caixa, 1/2 caixa, 5 comp."
+                                    required
+                                    style="
+                                        width: 100%;
+                                        padding: 12px 16px;
+                                        border: 1px solid #d2d2d7;
+                                        border-radius: 8px;
+                                        font-size: 15px;
+                                        transition: all 0.2s;
+                                    "
+                                >
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                style="
+                                    background: #007AFF;
+                                    color: white;
+                                    border: none;
+                                    padding: 12px 24px;
+                                    border-radius: 8px;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    transition: all 0.2s;
+                                    white-space: nowrap;
+                                "
+                                onmouseover="this.style.background='#0051D5'"
+                                onmouseout="this.style.background='#007AFF'"
+                            >
+                                + Adicionar
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Lista de medicamentos -->
+                    <div id="farmaciaLista" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    
+                    <!-- Estado vazio -->
+                    <div id="farmaciaEmpty" style="
                         text-align: center;
-                        padding: 60px 20px;
-                        color: #8E8E93;
+                        padding: 48px 20px;
+                        color: #86868b;
+                        display: none;
                     ">
                         <div style="font-size: 64px; margin-bottom: 16px;">💊</div>
-                        <h3 style="
-                            font-size: 20px;
-                            font-weight: 600;
-                            color: #1D1D1F;
-                            margin-bottom: 8px;
-                        ">Tab Farmácia</h3>
-                        <p style="
-                            font-size: 15px;
-                            color: #86868B;
-                            max-width: 400px;
-                            margin: 0 auto;
-                        ">Esta tab está pronta para adicionar funcionalidades de gestão de medicamentos, prescrições e alertas de toma.</p>
+                        <p style="font-size: 17px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px;">
+                            Nenhum medicamento registado
+                        </p>
+                        <p style="font-size: 15px; color: #86868b;">
+                            Adiciona medicamentos para fazer o controlo do stock.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -10828,6 +10892,267 @@ function initializeComprasModule() {
 }
 
 // ============================================
+// 💊 MÓDULO DE FARMÁCIA (Stock de Medicamentos)
+// ============================================
+// ✅ v3.7.2.29: Gestão de stock de medicamentos
+
+let listaFarmacia = [];
+
+// Carregar medicamentos do Supabase
+async function carregarFarmacia() {
+    try {
+        console.log('💊 Carregando medicamentos do Supabase...');
+        
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/farmacia?select=*&order=descricao.asc`, {
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar farmácia: ${response.status}`);
+        }
+        
+        listaFarmacia = await response.json();
+        console.log(`✅ ${listaFarmacia.length} medicamentos carregados`);
+        
+        renderizarFarmacia();
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar farmácia:', error);
+        listaFarmacia = [];
+        renderizarFarmacia();
+    }
+}
+
+// Renderizar lista de medicamentos
+function renderizarFarmacia() {
+    const lista = document.getElementById('farmaciaLista');
+    const empty = document.getElementById('farmaciaEmpty');
+    
+    if (!lista || !empty) return;
+    
+    if (listaFarmacia.length === 0) {
+        lista.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    
+    lista.style.display = 'flex';
+    empty.style.display = 'none';
+    
+    lista.innerHTML = listaFarmacia.map(med => `
+        <div style="
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: white;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            transition: all 0.2s;
+        " onmouseover="this.style.borderColor='#007AFF'; this.style.boxShadow='0 4px 12px rgba(0,122,255,0.15)'" onmouseout="this.style.borderColor='#d2d2d7'; this.style.boxShadow='none'">
+            
+            <!-- Ícone -->
+            <div style="
+                font-size: 32px;
+                flex-shrink: 0;
+            ">💊</div>
+            
+            <!-- Info -->
+            <div style="flex: 1; min-width: 0;">
+                <div style="
+                    font-weight: 600;
+                    font-size: 15px;
+                    color: #1d1d1f;
+                    margin-bottom: 4px;
+                ">${med.descricao}</div>
+                <div style="
+                    font-size: 13px;
+                    color: #86868b;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                ">
+                    <span>📦</span>
+                    <input 
+                        type="text" 
+                        value="${med.quantidade}"
+                        onblur="atualizarQuantidadeFarmacia('${med.id}', this.value)"
+                        onkeydown="if(event.key==='Enter') this.blur()"
+                        style="
+                            border: none;
+                            background: transparent;
+                            color: #007AFF;
+                            font-weight: 600;
+                            font-size: 13px;
+                            width: 150px;
+                            padding: 4px;
+                            border-radius: 4px;
+                            transition: background 0.2s;
+                        "
+                        onfocus="this.style.background='#f5f5f7'"
+                        onblur="this.style.background='transparent'"
+                        title="Clica para editar a quantidade"
+                    >
+                </div>
+            </div>
+            
+            <!-- Botão Remover -->
+            <button 
+                onclick="removerMedicamento('${med.id}')"
+                style="
+                    background: transparent;
+                    border: none;
+                    color: #ff3b30;
+                    cursor: pointer;
+                    padding: 8px;
+                    border-radius: 8px;
+                    transition: all 0.2s;
+                    font-size: 20px;
+                    flex-shrink: 0;
+                "
+                onmouseover="this.style.background='rgba(255,59,48,0.1)'"
+                onmouseout="this.style.background='transparent'"
+                title="Remover medicamento"
+            >🗑️</button>
+        </div>
+    `).join('');
+}
+
+// Adicionar medicamento
+async function adicionarMedicamento(descricao, quantidade) {
+    try {
+        const username = AppState.currentUser?.nomeCompleto || AppState.currentUser?.username || 'Desconhecido';
+        
+        const novoMedicamento = {
+            descricao: descricao.trim(),
+            quantidade: quantidade.trim(),
+            atualizado_por: username
+        };
+        
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/farmacia`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(novoMedicamento)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao adicionar medicamento: ${response.status}`);
+        }
+        
+        console.log('✅ Medicamento adicionado');
+        await carregarFarmacia();
+        showToast('✅ Medicamento adicionado', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao adicionar medicamento:', error);
+        showToast('❌ Erro ao adicionar medicamento', 'error');
+    }
+}
+
+// Atualizar quantidade (edição inline)
+async function atualizarQuantidadeFarmacia(id, novaQuantidade) {
+    if (!novaQuantidade || !novaQuantidade.trim()) {
+        showToast('⚠️ Quantidade não pode estar vazia', 'error');
+        await carregarFarmacia(); // Recarregar para restaurar valor antigo
+        return;
+    }
+    
+    try {
+        const username = AppState.currentUser?.nomeCompleto || AppState.currentUser?.username || 'Desconhecido';
+        
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/farmacia?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                quantidade: novaQuantidade.trim(),
+                data_atualizacao: new Date().toISOString(),
+                atualizado_por: username
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao atualizar quantidade: ${response.status}`);
+        }
+        
+        console.log('✅ Quantidade atualizada');
+        await carregarFarmacia();
+        showToast('✅ Quantidade atualizada', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao atualizar quantidade:', error);
+        showToast('❌ Erro ao atualizar quantidade', 'error');
+        await carregarFarmacia();
+    }
+}
+
+// Remover medicamento
+async function removerMedicamento(id) {
+    if (!confirm('Tens a certeza que queres remover este medicamento?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/farmacia?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SUPABASE_CONFIG.ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao remover medicamento: ${response.status}`);
+        }
+        
+        console.log('✅ Medicamento removido');
+        await carregarFarmacia();
+        showToast('🗑️ Medicamento removido', 'info');
+        
+    } catch (error) {
+        console.error('❌ Erro ao remover medicamento:', error);
+        showToast('❌ Erro ao remover medicamento', 'error');
+    }
+}
+
+// Inicializar módulo de farmácia
+async function initializeFarmaciaModule() {
+    await carregarFarmacia();
+    
+    // Event listener para o formulário
+    const form = document.getElementById('farmaciaForm');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const descricao = document.getElementById('medicamentoDescricao').value;
+            const quantidade = document.getElementById('medicamentoQuantidade').value;
+            
+            if (!descricao || !quantidade) {
+                showToast('❌ Preenche todos os campos!', 'error');
+                return;
+            }
+            
+            adicionarMedicamento(descricao, quantidade);
+            
+            // Limpar formulário
+            form.reset();
+        });
+    }
+}
+
+// ============================================
 // 📝 MÓDULO DE TAREFAS - UPLOAD DE FOTOS
 // ============================================
 
@@ -11809,6 +12134,7 @@ function initializeStockModule() {
     // ✅ v3.7.2.3: Inicializar módulos
     initializeComprasModule();
     initializeDocumentosModule();
+    initializeFarmaciaModule(); // ✅ v3.7.2.29: Carregar stock de medicamentos
     
     // ✅ CORRIGIDO: Já carregado em syncWithSupabase(), não precisa recarregar
     // loadArtigosFromGoogleSheets(); // ❌ REMOVIDO - função não existe

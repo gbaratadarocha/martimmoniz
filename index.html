@@ -4653,8 +4653,9 @@ async function getPedidos() {
     return result;
 }
 
+// ✅ v3.7.2.29: Corrigido para usar pedido_id
 async function addPedido(pedido) {
-    console.log('🔥 DEBUG addPedido: ID recebido =', pedido.ID);
+    console.log('🔥 DEBUG addPedido: ID recebido =', pedido.pedido_id || pedido.ID);
     console.log('🔥 DEBUG addPedido: Body completo =', JSON.stringify(pedido, null, 2));
     
     const result = await supabaseFetch('pedidos', {
@@ -4666,11 +4667,13 @@ async function addPedido(pedido) {
     return result;
 }
 
+// ✅ v3.7.2.29: Corrigido para usar pedido_id
 async function updatePedido(id, pedido) {
     console.log(`🔄 SupabaseAPI.updatePedido chamado para ID: ${id}`);
     console.log('📦 Dados da ordem de trabalho:', pedido);
     
-    const result = await supabaseFetch(`pedidos?ID=eq.${id}`, {
+    // ✅ CORRIGIDO: usar pedido_id em vez de ID
+    const result = await supabaseFetch(`pedidos?pedido_id=eq.${id}`, {
         method: 'PATCH',
         body: JSON.stringify(pedido)
     });
@@ -4679,8 +4682,10 @@ async function updatePedido(id, pedido) {
     return result;
 }
 
+// ✅ v3.7.2.29: Corrigido para usar pedido_id
 async function deletePedido(id) {
-    return await supabaseFetch(`pedidos?ID=eq.${id}`, {
+    console.log('🗑️ DEBUG deletePedido: Apagar ID =', id);
+    return await supabaseFetch(`pedidos?pedido_id=eq.${id}`, {
         method: 'DELETE'
     });
 }
@@ -14467,3 +14472,4 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
+

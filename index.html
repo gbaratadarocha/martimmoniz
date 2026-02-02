@@ -5926,7 +5926,8 @@ async function initializeApp() {
     // 🧹 LIMPEZA AUTOMÁTICA DIÁRIA (primeiro que tudo!)
     cleanOldDataFromLocalStorage();
     
-    await unregisterServiceWorkers();
+    // ✅ v3.7.2.29: ATIVAR Service Worker (em vez de desativar)
+    await registerServiceWorker();
     setupEventListeners();
     setupOnlineOfflineListeners();
     
@@ -9225,7 +9226,42 @@ function exportToExcel() {
 //     }
 // }
 
-// DESATIVAR Service Workers existentes
+// ✅ v3.7.2.29: ATIVAR Service Worker com versionamento
+async function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register('./sw.js');
+            console.log('✅ Service Worker registado:', registration);
+            
+            // Detectar atualizações
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'activated') {
+                        console.log('🔄 Nova versão disponível! Recarregando...');
+                        // Mostrar toast e recarregar
+                        showToast('✨ Nova versão instalada! A atualizar...', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    }
+                });
+            });
+            
+            // Escutar mensagens do SW
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.type === 'SW_UPDATED') {
+                    console.log(`🔄 Service Worker atualizado para v${event.data.version}`);
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ Erro ao registar Service Worker:', error);
+        }
+    }
+}
+
+// DESATIVAR Service Workers antigos (manter por compatibilidade)
 async function unregisterServiceWorkers() {
     if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
@@ -14431,4 +14467,3 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
-

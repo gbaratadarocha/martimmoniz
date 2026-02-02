@@ -4641,11 +4641,16 @@ async function loginUtilizador(username, password) {
 
 // Pedidos
 async function getPedidos() {
-    // ✅ v3.7.2.26: Filtrar apenas pedidos DOMÉSTICOS (não industriais)
-    const tiposDomesticos = ['Casa', 'Jardim', 'Carro', 'Administrativo', 'Compras', 'Outros'];
-    const filtro = tiposDomesticos.map(t => `tipo.eq.${t}`).join(',');
+    // ✅ v3.7.2.29: Carregar TODOS os pedidos (tabela já é só doméstica)
+    // Não precisa filtrar por tipo porque a tabela 'pedidos' é dedicada à app doméstica
+    const result = await supabaseFetch(`pedidos?select=*&order=created_at.desc`);
     
-    return await supabaseFetch(`pedidos?select=*&or=(${filtro})`);
+    console.log('📊 getPedidos: Total recebido =', result.length);
+    if (result.length > 0) {
+        console.log('📊 Primeira tarefa:', result[0]);
+    }
+    
+    return result;
 }
 
 async function addPedido(pedido) {
@@ -5441,29 +5446,32 @@ async function loadDataFromSupabase() {
             console.log('Primeiro pedido:', JSON.stringify(pedidos[0], null, 2));
         }
         
-        // Converter formato Supabase → formato da app
+        // ✅ v3.7.2.29: Converter formato Supabase DOMÉSTICO → formato da app
         AppState.requests = pedidos.map(p => ({
-            id: p.ID,
-            dataHora: p['Data/hora'],           // ✅ Corrigido: era timestamp
-            tipo: p.Tipo,                       // ✅ Corrigido: era type
-            frequencia: p.frequencia || '',     // ✅ v3.7.0.8: snake_case
-            dataPrimeiraIntervencao: p.data_primeira_intervencao || '',  // ✅ v3.7.0.8: snake_case
-            prioridade: p.Prioridade,           // ✅ Corrigido: era priority
-            departamento: p.Departamento,       // ✅ Corrigido: era department
-            descricao: p.Descrição,             // ✅ Corrigido: era description
-            nome: p['Registado por'],           // ✅ Corrigido: era registeredBy
-            estado: p.Estado,                   // ✅ Corrigido: era status
-            foto: p.Foto || '',                 // ✅ OK
+            id: p.pedido_id || p.ID,                    // ✅ NOVO: pedido_id (OT_00001)
+            dataHora: p.created_at || p['Data/hora'],   // ✅ NOVO: created_at
+            tipo: p.tipo || p.Tipo,                     // ✅ NOVO: tipo (Casa, Jardim, Carro)
+            zona: p.zona || '',                         // ✅ NOVO: zona (Cozinha, Sala, etc.)
+            frequencia: p.frequencia || '',
+            dataPrimeiraIntervencao: p.data_primeira_intervencao || '',
+            prioridade: p.prioridade || p.Prioridade || 'Média',  // ✅ NOVO: prioridade
+            departamento: p.Departamento || '',
+            descricao: p.descricao || p.Descrição,      // ✅ NOVO: descricao
+            nome: p.responsavel || p['Registado por'] || 'Desconhecido',  // ✅ NOVO: responsavel
+            responsavel: p.responsavel || p['Registado por'] || 'Desconhecido',  // ✅ Alias
+            estado: p.estado || p.Estado || 'Novo',     // ✅ NOVO: estado
+            foto: p.foto_url || p.Foto || '',           // ✅ NOVO: foto_url (URL do Storage)
             artigos: p.Artigos ? (typeof p.Artigos === 'string' ? JSON.parse(p.Artigos) : p.Artigos) : [],
-            empresa: p.Empresa,                 // ✅ Corrigido: era company
-            tipoIntervencao: p['Tipo Intervenção'] || '', // ✅ Corrigido: era interventionType
-            areaEquipamento: p['Área/Equipamento'] || '', // ✅ Corrigido: era areaEquipment
-            componente: p.Componente || '',     // ✅ Corrigido: era component
+            empresa: p.Empresa || 'Casa',
+            tipoIntervencao: p['Tipo Intervenção'] || '',
+            areaEquipamento: p['Área/Equipamento'] || '',
+            componente: p.Componente || '',
             urgente: p.Urgente === 'TRUE' || p.Urgente === true,
             paragemProducao: p['Paragem Produção'] === 'TRUE' || p['Paragem Produção'] === true,
-            responsavel: p.Responsável || '',   // ✅ ADICIONADO v3.6.21
-            horasEstimadas: parseFloat(p['Horas Estimadas']) || 0  // ✅ ADICIONADO v3.6.21
+            horasEstimadas: parseFloat(p['Horas Estimadas']) || 0
         }));
+        
+        console.log('✅ Mapeamento completo:', AppState.requests.length, 'tarefas carregadas');
         
         // ✅ Ordenar por data (mais recentes primeiro) - ordem no JavaScript
         AppState.requests.sort((a, b) => {

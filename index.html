@@ -3765,8 +3765,7 @@
                         <div class="form-group">
                             <label class="form-label" for="tipo">Tipo de Tarefa *</label>
                             <select class="form-input" id="tipo" name="tipo" required>
-                                <option value="">Selecione o tipo</option>
-                                <option value="Casa">🏠 Casa</option>
+                                <option value="Casa" selected>🏠 Casa</option>
                                 <option value="Jardim">🌳 Jardim</option>
                                 <option value="Carro">🚗 Carro</option>
                                 <option value="Administrativo">📄 Administrativo</option>
@@ -5642,7 +5641,7 @@ function applyPermissions() {
         'stock': user.acesso_compras !== false,
         'novoDocumento': user.acesso_novo_documento !== false,
         'analise': user.acesso_documentos !== false,
-        'farmacia': user.acesso_farmacia === true // Default: false
+        'farmacia': true // ✅ v3.7.2.29: Farmácia sempre visível
     };
     
     console.log('🔒 Permissões do utilizador:', tabPermissions);
@@ -7880,6 +7879,14 @@ async function handleFormSubmit(e) {
         const tipoValue = document.getElementById('tipo').value;
         const prioridadeValue = document.querySelector('input[name="prioridade"]:checked')?.value;
         
+        // ✅ v3.7.2.29: Validar tipo obrigatório
+        if (!tipoValue) {
+            showToast('❌ Por favor, seleciona o tipo de tarefa!', 'error');
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+            return;
+        }
+        
         // ✅ Prioridade é sempre obrigatória
         if (!prioridadeValue) {
             showToast('❌ Por favor, seleciona uma prioridade!', 'error');
@@ -8758,19 +8765,53 @@ async function sendToGoogleSheets(data) {
     try {
         console.log('🔥 DEBUG: ID gerado no JavaScript:', data.id);
         
+        // ✅ v3.7.2.29: Validar e normalizar TODOS os campos com constraints
+        const tiposPermitidos = ['Casa', 'Jardim', 'Carro', 'Administrativo', 'Compras', 'Outros'];
+        const prioridadesPermitidas = ['Alta', 'Média', 'Baixa'];
+        const estadosPermitidos = ['Novo', 'Em curso', 'Resolvido'];
+        
+        // Normalizar tipo
+        let tipoNormalizado = data.tipo ? data.tipo.trim() : '';
+        if (!tiposPermitidos.includes(tipoNormalizado)) {
+            console.warn(`⚠️ Tipo inválido: "${tipoNormalizado}" → Usando "Casa"`);
+            tipoNormalizado = 'Casa';
+        }
+        
+        // Normalizar prioridade
+        let prioridadeNormalizada = data.prioridade ? data.prioridade.trim() : 'Média';
+        if (!prioridadesPermitidas.includes(prioridadeNormalizada)) {
+            console.warn(`⚠️ Prioridade inválida: "${prioridadeNormalizada}" → Usando "Média"`);
+            prioridadeNormalizada = 'Média';
+        }
+        
+        // Normalizar estado
+        let estadoNormalizado = data.estado ? data.estado.trim() : 'Novo';
+        if (!estadosPermitidos.includes(estadoNormalizado)) {
+            console.warn(`⚠️ Estado inválido: "${estadoNormalizado}" → Usando "Novo"`);
+            estadoNormalizado = 'Novo';
+        }
+        
         // ✅ v3.7.2.14: Converter formato da app → formato Supabase DOMÉSTICO
         const supabaseData = {
-            pedido_id: data.id,              // OT_00001, OT_00002, etc.
-            tipo: data.tipo,                 // Casa, Jardim, Carro, etc.
-            zona: data.zona || null,         // Cozinha, Sala, Quarto, etc.
-            descricao: data.descricao,       // Texto da tarefa
-            prioridade: data.prioridade,     // Alta, Média, Baixa
-            estado: data.estado || 'Novo',   // Novo, Em curso, Resolvido
-            responsavel: data.responsavel || data.nome || 'Não atribuído',
-            foto_url: data.foto || null      // URL da foto (opcional)
+            pedido_id: data.id,                    // OT_00001, OT_00002, etc.
+            tipo: tipoNormalizado,                 // ✅ Validado
+            zona: data.zona || null,               // Cozinha, Sala, Quarto, etc.
+            descricao: data.descricao || 'Sem descrição',  // ✅ NOT NULL
+            prioridade: prioridadeNormalizada,     // ✅ Validado
+            estado: estadoNormalizado,             // ✅ Validado
+            responsavel: data.responsavel || data.nome || 'Não atribuído',  // ✅ NOT NULL
+            foto_url: data.foto || null            // URL da foto (opcional)
         };
         
         console.log('🔥 DEBUG: Dados enviados para Supabase:', JSON.stringify(supabaseData, null, 2));
+        console.log('🔥 DEBUG TIPO:', {
+            tipo: supabaseData.tipo,
+            typeOf: typeof supabaseData.tipo,
+            length: supabaseData.tipo?.length,
+            isEmpty: supabaseData.tipo === '',
+            isNull: supabaseData.tipo === null,
+            isUndefined: supabaseData.tipo === undefined
+        });
         
         const result = await window.SupabaseAPI.addPedido(supabaseData);
         console.log('✅ Pedido guardado no Supabase');
@@ -14472,4 +14513,3 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
-

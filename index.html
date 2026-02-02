@@ -11773,6 +11773,9 @@ async function removerDocumento(id) {
         }
         
         // Apagar documento da tabela
+        console.log('🗑️ DEBUG: Apagar documento ID =', id);
+        console.log('🗑️ DEBUG: URL =', `${SUPABASE_CONFIG.URL}/rest/v1/documentos?documento_id=eq.${id}`);
+        
         const deleteResponse = await fetch(`${SUPABASE_CONFIG.URL}/rest/v1/documentos?documento_id=eq.${id}`, {
             method: 'DELETE',
             headers: {
@@ -11781,8 +11784,12 @@ async function removerDocumento(id) {
             }
         });
         
+        console.log('🗑️ DEBUG: Response status =', deleteResponse.status);
+        
         if (!deleteResponse.ok) {
-            throw new Error(`Erro ao apagar documento: ${deleteResponse.status}`);
+            const errorText = await deleteResponse.text();
+            console.error('🗑️ DEBUG: Erro detalhado =', errorText);
+            throw new Error(`Erro ao apagar documento: ${deleteResponse.status} - ${errorText}`);
         }
         
         console.log('✅ Documento apagado do Supabase:', id);

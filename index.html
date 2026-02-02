@@ -4455,7 +4455,7 @@
             <div class="login-card-apple">
                 <!-- Logo -->
                 <div class="login-logo-container">
-                    <img src="/appmanutencao/icons/android-chrome-192x192.png" alt="Logo Manutenção" class="login-logo" id="loginLogo">
+                    <!-- ✅ v3.7.2.25: Logo removido (não existe) -->
                 </div>
                 
                 <!-- Título -->
@@ -4570,8 +4570,11 @@ async function loginUtilizador(username, password) {
 
 // Pedidos
 async function getPedidos() {
-    // ✅ Corrigido: Remover order porque "Data/hora" tem barra
-    return await supabaseFetch('pedidos?select=*');
+    // ✅ v3.7.2.26: Filtrar apenas pedidos DOMÉSTICOS (não industriais)
+    const tiposDomesticos = ['Casa', 'Jardim', 'Carro', 'Administrativo', 'Compras', 'Outros'];
+    const filtro = tiposDomesticos.map(t => `tipo.eq.${t}`).join(',');
+    
+    return await supabaseFetch(`pedidos?select=*&or=(${filtro})`);
 }
 
 async function addPedido(pedido) {
@@ -10670,6 +10673,10 @@ async function resetarTodasCompras() {
         listaCompras = [];
         renderizarListaCompras();
         showToast('🗑️ Lista de compras limpa', 'success');
+        
+    } catch (error) {
+        console.error('❌ Erro ao resetar lista:', error);
+        showToast('❌ Erro ao limpar lista. Tenta novamente.', 'error');
     }
 }
 
@@ -13851,4 +13858,3 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
-

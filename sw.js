@@ -1,11 +1,13 @@
 // ================================================
-// Service Worker - App de Manutenção
+// Service Worker - App de Manutenção Doméstica
 // Suporte offline e cache de recursos
+// ✅ v3.7.2.29: Cache atualizado para forçar refresh
 // ================================================
 
-const CACHE_NAME = 'manutencao-v1';
-const STATIC_CACHE = 'manutencao-static-v1';
-const DYNAMIC_CACHE = 'manutencao-dynamic-v1';
+const CACHE_VERSION = '3.7.2.29';
+const CACHE_NAME = `manutencao-v${CACHE_VERSION}`;
+const STATIC_CACHE = `manutencao-static-v${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `manutencao-dynamic-v${CACHE_VERSION}`;
 
 // Recursos para cache no install
 const STATIC_ASSETS = [
@@ -39,25 +41,42 @@ self.addEventListener('install', (event) => {
 
 // ============================================
 // ACTIVATE EVENT
+// ✅ v3.7.2.29: Limpar TODOS os caches antigos
 // ============================================
 self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Ativando...');
+    console.log(`[Service Worker] Ativando v${CACHE_VERSION}...`);
     
     event.waitUntil(
         caches.keys()
             .then((cacheNames) => {
+                console.log('[Service Worker] Caches existentes:', cacheNames);
                 return Promise.all(
                     cacheNames.map((cacheName) => {
-                        if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-                            console.log('[Service Worker] Removendo cache antigo:', cacheName);
+                        // ✅ Apagar TODOS os caches antigos
+                        if (cacheName !== STATIC_CACHE && 
+                            cacheName !== DYNAMIC_CACHE && 
+                            cacheName !== CACHE_NAME) {
+                            console.log('[Service Worker] 🗑️ Removendo cache antigo:', cacheName);
                             return caches.delete(cacheName);
                         }
                     })
                 );
             })
             .then(() => {
-                console.log('[Service Worker] Ativado com sucesso');
+                console.log(`[Service Worker] ✅ Ativado v${CACHE_VERSION}`);
+                // ✅ Tomar controlo imediato de TODAS as páginas
                 return self.clients.claim();
+            })
+            .then(() => {
+                // ✅ Notificar todos os clientes para recarregar
+                return self.clients.matchAll().then(clients => {
+                    clients.forEach(client => {
+                        client.postMessage({
+                            type: 'SW_UPDATED',
+                            version: CACHE_VERSION
+                        });
+                    });
+                });
             })
     );
 });
